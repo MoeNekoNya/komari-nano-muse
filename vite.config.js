@@ -1,35 +1,56 @@
 import { defineConfig } from 'vite'
-import { viteSingleFile } from 'vite-plugin-singlefile'
-import { renameSync } from 'node:fs'
+import vue from '@vitejs/plugin-vue'
 
-// NanoMuse Komari theme
-// Two outputs, built one after the other (`npm run build`), as in the ran theme:
-//   - dist/index.html                 — the theme Komari serves; artwork stays in dist/ (copied from public/)
-//   - preview/NanoMuse-preview.html   — offline preview: mock API and artwork inlined, opens from file://
-const preview = process.env.BUILD_TARGET === 'preview'
+const esc = value => String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')
 
-/* The preview reuses index.html but boots through src/preview.js. */
-const previewEntry = {
-  name: 'nanomuse-preview-entry',
-  transformIndexHtml: {
-    order: 'pre',
-    handler: html =>
-      html
-        .replace('/src/main.ts', '/src/preview.ts')
-        .replace('<title>Komari Monitor</title>', '<title>NanoMuse · 设计预览（模拟数据）</title>'),
-  },
-  closeBundle: () => renameSync('preview/index.html', 'preview/NanoMuse-preview.html'),
-}
+export default defineConfig(() => {
+  const apiBase = process.env.API_BASE || ''
+  const title = process.env.TITLE || ''
+  const backgroundImage = process.env.BACKGROUND_IMAGE || ''
+  const cspApi = (process.env.CSP_API || '').split(',').map(value => value.trim()).filter(Boolean).join(' ')
+  const cspStatic = (process.env.CSP_STATIC || '').split(',').map(value => value.trim()).filter(Boolean).join(' ')
+  const csp = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https:",
+    "style-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https:",
+    "img-src 'self' data: blob: https: " + cspStatic,
+    "font-src 'self' data: https: " + cspStatic,
+    "connect-src 'self' https: wss: " + cspApi,
+    "frame-src https://challenges.cloudflare.com"
+  ].join('; ')
 
-export default defineConfig({
-  plugins: [...(preview ? [previewEntry] : []), viteSingleFile()],
-  publicDir: preview ? false : 'public',
-  build: {
-    target: 'es2020',
-    cssCodeSplit: false,
-    assetsInlineLimit: 100_000_000,
-    chunkSizeWarningLimit: 4_000,
-    outDir: preview ? 'preview' : 'dist',
-    emptyOutDir: true,
-  },
+  return {
+    base: './',
+    publicDir: false,
+    plugins: [
+      vue(),
+      {
+        name: 'cfsm-runtime-meta',
+        transformIndexHtml(html) {
+          return html
+            .replace('__API_BASE__', esc(apiBase))
+            .replace('__BUILD_TITLE__', esc(title))
+            .replace('__BACKGROUND_IMAGE__', esc(backgroundImage))
+            .replace('__CSP_API__', esc(cspApi))
+            .replace('__CSP_STATIC__', esc(cspStatic))
+            .replace('__CSP_POLICY__', esc(csp))
+        }
+      }
+    ],
+    build: {
+      outDir: 'dist',
+      assetsDir: 'assets',
+      emptyOutDir: true,
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          assetFileNames: 'assets/[name]-[hash][extname]',
+          chunkFileNames: 'assets/[name]-[hash].js',
+          entryFileNames: 'assets/[name]-[hash].js'
+        }
+      }
+    }
+  }
 })
