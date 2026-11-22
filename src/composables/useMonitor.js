@@ -53,7 +53,11 @@ function flushSamples() {
     const patch = updates.get(server._apiBase + '::' + server.id)
     if (!patch) return server
     const wasOnline = isServerOnline(server)
-    const next = mergeObjects(server, patch)
+    // Card latency windows are immutable snapshots from /api/servers only.
+    const listPatch = { ...patch }
+    delete listPatch.ping
+    delete listPatch.loss
+    const next = mergeObjects(server, listPatch)
     const nowOnline = isServerOnline(next)
     if (wasOnline !== nowOnline) {
       if (nowOnline) { onlineDelta += 1; offlineDelta -= 1 }
