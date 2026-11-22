@@ -144,8 +144,10 @@ async function saveTheme(values) {
 }
 function cancelChallenge() { finishChallenge(null, new Error('Turnstile 验证已取消')) }
 
+// Register before RouterView child onMounted hooks can start API requests.
+setTurnstileHandler(challenge)
+
 onMounted(() => {
-  setTurnstileHandler(challenge)
   document.addEventListener('visibilitychange', handleVisibilityChange)
   window.addEventListener('resize', onResize, { passive: true })
 })
