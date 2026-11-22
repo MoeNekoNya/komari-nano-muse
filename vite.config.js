@@ -5,7 +5,7 @@ const esc = value => String(value || '').replace(/&/g, '&amp;').replace(/"/g, '&
 
 export default defineConfig(() => {
   const apiBase = process.env.API_BASE || ''
-  const title = process.env.TITLE || ''
+  const title = process.env.TITLE || 'CF Server Monitor'
   const backgroundImage = process.env.BACKGROUND_IMAGE || ''
   const cspApi = (process.env.CSP_API || '').split(',').map(value => value.trim()).filter(Boolean).join(' ')
   const cspStatic = (process.env.CSP_STATIC || '').split(',').map(value => value.trim()).filter(Boolean).join(' ')
@@ -30,12 +30,12 @@ export default defineConfig(() => {
         name: 'cfsm-runtime-meta',
         transformIndexHtml(html) {
           return html
-            .replace('__API_BASE__', esc(apiBase))
-            .replace('__BUILD_TITLE__', esc(title))
-            .replace('__BACKGROUND_IMAGE__', esc(backgroundImage))
-            .replace('__CSP_API__', esc(cspApi))
-            .replace('__CSP_STATIC__', esc(cspStatic))
-            .replace('__CSP_POLICY__', esc(csp))
+            .replaceAll('__API_BASE__', esc(apiBase))
+            .replaceAll('__BUILD_TITLE__', esc(title))
+            .replaceAll('__BACKGROUND_IMAGE__', esc(backgroundImage))
+            .replaceAll('__CSP_API__', esc(cspApi))
+            .replaceAll('__CSP_STATIC__', esc(cspStatic))
+            .replaceAll('__CSP_POLICY__', esc(csp))
         }
       }
     ],
