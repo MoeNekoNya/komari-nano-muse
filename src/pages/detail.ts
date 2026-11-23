@@ -1,4 +1,4 @@
-import { getJson, hasMetricStore, pingTasks, queryMetrics, rpc2 } from '../api/client'
+import { getJson, hasMetricStore, loadServerDetail, pingTasks, queryMetrics, rpc2 } from '../api/client'
 import { chart } from '../charts/chart'
 import { lvl } from '../nodes/list'
 import {
@@ -48,6 +48,7 @@ const HOURS: [number, string][] = [
   [96, '4D'],
   [168, '7D'],
 ]
+const detailSnapshotRequested = new Set<string>()
 function openDetail() {
   const n = nodeBy(S.det.uuid)
   if (!n) {
@@ -56,6 +57,15 @@ function openDetail() {
     $('detSpec').innerHTML = ''
     $('detCharts').innerHTML = ''
     return
+  }
+  if (!detailSnapshotRequested.has(n.uuid)) {
+    detailSnapshotRequested.add(n.uuid)
+    void loadServerDetail(n.uuid).then(() => {
+      if (S.det.uuid === n.uuid) openDetail()
+    }).catch(error => {
+      detailSnapshotRequested.delete(n.uuid)
+      console.warn('[NanoMuse] CFSM server detail', error)
+    })
   }
   const h = $('detName')
   h.textContent = n.name
