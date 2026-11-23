@@ -64,7 +64,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git fetch origin dist
-          git checkout -B publish-cfsm-dist origin/dist
+          # Vite's build output overlaps with the upstream tracked preview/dist files.
+          # The complete CFSM build has already been copied to /tmp above.
+          git checkout -f -B publish-cfsm-dist origin/dist
           git rm -rf .
           cp -a /tmp/cfsm-theme-output/. .
           git add index.html assets
