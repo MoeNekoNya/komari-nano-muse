@@ -302,7 +302,12 @@ async function loadEcho(force = false) {
                 rs.map(p => ({ time: p.time, value: p.value })),
                 rs
                   .filter(p => Number.isFinite(p.value))
-                  .map(p => ({ time: p.time, value: p.value < 0 ? 1 : 0 })),
+                  .map(p => ({
+                    time: p.time,
+                    value: Number.isFinite(p.loss)
+                      ? Math.max(0, Math.min(1, Number(p.loss) / 100))
+                      : p.value < 0 ? 1 : 0,
+                  })),
                 now,
                 t.interval || 60,
               )
