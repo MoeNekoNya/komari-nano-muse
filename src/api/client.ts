@@ -29,8 +29,12 @@ function authHeaders(): Record<string, string> {
 }
 function toMillis(value: any, fallback = Date.now()): number {
   const n = Number(value)
-  if (!Number.isFinite(n) || n <= 0) return fallback
-  return n < 10000000000 ? n * 1000 : n
+  if (Number.isFinite(n) && n > 0) return n < 10000000000 ? n * 1000 : n
+  if (typeof value === 'string' && value.trim()) {
+    const parsed = Date.parse(value)
+    if (Number.isFinite(parsed) && parsed > 0) return parsed
+  }
+  return fallback
 }
 function toISO(value: any): string {
   const n = toMillis(value, 0)
