@@ -115,10 +115,8 @@ function socketUrl(): string {
   const url = new URL('/api/ws', window.location.origin)
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
   url.searchParams.set('subscribe', 'all')
-  const config = (window as any).__CFSM_CONFIG__ || {}
-  let jwt: string | null = null
-  try { jwt = localStorage.getItem('jwt_token') } catch { /* storage disabled */ }
-  if (config.authorization !== true && config.is_public !== true && jwt) url.searchParams.set('token', jwt)
+  // Same-origin CFSM WebSockets use the Worker's authenticated session cookie.
+  // Match CFSM's own client: only cross-origin sockets need a JWT query parameter.
   return url.toString()
 }
 function connect(): void {
