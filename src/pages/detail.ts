@@ -440,7 +440,7 @@ async function fetchPing(uuid, hours) {
         pts,
         avg: v.length ? v.reduce((a, b) => a + b, 0) / v.length : null,
         max: v.length ? Math.max(...v) : null,
-        loss: rs.length ? ((rs.length - v.length) / rs.length) * 100 : t.loss != null ? t.loss : null,
+        loss: t.loss != null ? Number(t.loss) : rs.length ? ((rs.length - v.length) / rs.length) * 100 : null,
       }
     })
     return { tasks, defs: d.tasks || [] }
