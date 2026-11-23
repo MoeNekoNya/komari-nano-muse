@@ -38,12 +38,15 @@ import { parseTags, tagStyle } from '../utils/tags'
 /* ══ detail ══ */
 /** Selectable history windows: [hours, label]. */
 const HOURS: [number, string][] = [
+  [0.167, '10M'],
+  [0.5, '30M'],
   [1, '1H'],
   [6, '6H'],
+  [12, '12H'],
   [24, '24H'],
-  [72, '3D'],
+  [48, '2D'],
+  [96, '4D'],
   [168, '7D'],
-  [720, '30D'],
 ]
 function openDetail() {
   const n = nodeBy(S.det.uuid)
