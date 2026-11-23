@@ -18,9 +18,10 @@ const PAGES: Page[] = ['dashboard', 'duty', 'detail', 'stability', 'worldmap', '
 function route() {
   const p = currentPath()
   let page: Page = 'dashboard'
-  if (p.startsWith('/detail/')) {
+  if (p.startsWith('/server/') || p.startsWith('/detail/')) {
     page = 'detail'
-    S.det.uuid = decodeURIComponent(p.slice(8).split('/')[0])
+    const prefix = p.startsWith('/server/') ? '/server/' : '/detail/'
+    S.det.uuid = decodeURIComponent(p.slice(prefix.length).split('/')[0])
   } else if (p === '/duty') page = 'duty'
   else if (p === '/stability') page = 'stability'
   else if (p === '/worldmap' || p === '/map') page = 'worldmap'
@@ -47,9 +48,10 @@ function route() {
   document.title = (page === 'detail' && nodeBy(S.det.uuid) ? nodeBy(S.det.uuid).name + ' · ' : '') + S.site
 }
 function nav(href) {
-  if (href === currentPath()) return
-  if (HASH_ROUTER()) location.hash = href
-  else history.pushState(null, '', href)
+  const target = HASH_ROUTER() && href.startsWith('/detail/') ? href.replace('/detail/', '/server/') : href
+  if (target === currentPath()) return
+  if (HASH_ROUTER()) location.hash = target
+  else history.pushState(null, '', target)
   route()
   window.scrollTo({ top: 0, behavior: 'instant' })
 }
