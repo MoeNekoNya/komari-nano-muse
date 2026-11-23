@@ -57,7 +57,7 @@ jobs:
 
       - name: Publish to dist branch
         env:
-          SOURCE_SHA: \${{ github.sha }}
+          SOURCE_SHA: ${{ github.sha }}
         run: |
           mkdir -p /tmp/cfsm-theme-output
           cp -a dist/. /tmp/cfsm-theme-output/
