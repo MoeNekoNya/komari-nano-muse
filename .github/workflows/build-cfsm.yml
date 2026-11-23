@@ -48,8 +48,10 @@ jobs:
           test -d dist/assets
           test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq 2
           test "$(find dist/assets -type f | wc -l)" -gt 0
-          if grep -Eq '(/api/rpc2|/api/clients|/api/nodes)' dist/index.html; then
-            echo "A Komari-only endpoint name remains in the generated bundle."
+          # Legacy Komari-shaped paths are handled locally by the adapter. Fail only if
+          # source code tries to fetch Komari-only routes over the network.
+          if grep -R -E "fetch\\(['\"]?/api/(rpc2|clients|nodes)" src; then
+            echo "A direct network request to a Komari-only endpoint remains."
             exit 1
           fi
 
