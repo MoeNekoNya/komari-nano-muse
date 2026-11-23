@@ -1,0 +1,71 @@
+name: Build CFSM NanoMuse theme
+
+on:
+  push:
+    branches: [cfsm-nanomuse]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'index.html'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'vite.config.js'
+      - 'scripts/package-cfsm.mjs'
+      - '.github/workflows/build-cfsm.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: cfsm-nanomuse-dist
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the original NanoMuse theme
+        run: |
+          npm run build
+          node scripts/package-cfsm.mjs
+
+      - name: Validate Worker theme output
+        run: |
+          test -f dist/index.html
+          test -d dist/assets
+          test "$(find dist -mindepth 1 -maxdepth 1 | wc -l)" -eq 2
+          test "$(find dist/assets -type f | wc -l)" -gt 0
+          if grep -Eq '(/api/rpc2|/api/clients|/api/nodes)' dist/index.html; then
+            echo "A Komari-only endpoint name remains in the generated bundle."
+            exit 1
+          fi
+
+      - name: Publish to dist branch
+        env:
+          SOURCE_SHA: \${{ github.sha }}
+        run: |
+          mkdir -p /tmp/cfsm-theme-output
+          cp -a dist/. /tmp/cfsm-theme-output/
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin dist
+          git checkout -B publish-cfsm-dist origin/dist
+          git rm -rf .
+          cp -a /tmp/cfsm-theme-output/. .
+          git add index.html assets
+          SHORT_SHA="$(printf '%s' "$SOURCE_SHA" | cut -c1-7)"
+          git commit --allow-empty -m "构建：NanoMuse 2.1.1 原版界面适配 CFSM ($SHORT_SHA)"
+          git push origin HEAD:dist
