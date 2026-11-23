@@ -8,6 +8,7 @@ const configCache: { value: any; pending: Promise<any> | null } = { value: null,
 const serversCache: { value: any; pending: Promise<any> | null } = { value: null, pending: null }
 const historyCache = new Map<string, Promise<any[]>>()
 const serverCache = new Map<string, any>()
+const serverDetailCache = new Map<string, Promise<any>>()
 let configValue: any = {}
 let sysConfig: any = {}
 let taskCache: PingTaskDef[] | null = null
@@ -326,6 +327,28 @@ function mapServerToNode(server: any): KomariNode {
     traffic_limit: parseTrafficLimit(server.traffic_limit),
     traffic_limit_type: trafficType[String(server.traffic_calc_type || 'max').toLowerCase()] || 'max'
   }
+}
+export function loadServerDetail(id: string): Promise<any> {
+  const key = String(id)
+  if (serverDetailCache.has(key)) return serverDetailCache.get(key) as Promise<any>
+  const pending = requestJson('/api/server?id=' + encodeURIComponent(key)).then(server => {
+    if (!server || typeof server !== 'object' || String(server.id) !== key) {
+      throw new Error('/api/server 返回的节点数据无效')
+    }
+    serverCache.set(key, server)
+    const mapped = mapServerToNode(server)
+    const index = S.nodes.findIndex(node => node.uuid === key)
+    if (index >= 0) S.nodes[index] = { ...S.nodes[index], ...mapped }
+    S.live[key] = mapServerToLive(server)
+    if (isOnline(server)) S.online.add(key)
+    else S.online.delete(key)
+    return server
+  }).catch(error => {
+    serverDetailCache.delete(key)
+    throw error
+  })
+  serverDetailCache.set(key, pending)
+  return pending
 }
 function rawServer(id: string): any {
   return serverCache.get(String(id))
