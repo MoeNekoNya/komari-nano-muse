@@ -489,6 +489,7 @@ async function loadPublic(): Promise<void> {
   try {
     const config = await apiConfig()
     configValue = config
+    ;(window as any).__CFSM_CONFIG__ = config
     const opts = config.theme_options && typeof config.theme_options === 'object' && !Array.isArray(config.theme_options)
       ? config.theme_options : {}
     S.site = String(config.site_title || 'NanoMuse')
