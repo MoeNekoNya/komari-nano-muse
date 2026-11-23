@@ -381,16 +381,31 @@ function getTasks(): PingTaskDef[] {
     { id: 3, key: 'cm', name: sysConfig.custom_cm_name || configValue.custom_cm_name || '移动' },
     { id: 4, key: 'bd', name: sysConfig.custom_bd_name || configValue.custom_bd_name || 'BGP' }
   ]
-  const clients = rawServers().map((s: any) => String(s.id))
-  taskCache = defs.map(x => ({ id: x.id, name: String(x.name), clients }))
+  taskCache = defs.map(def => {
+    const clients = rawServers().filter(server => {
+      const has = (rows: any[]) => Array.isArray(rows) && rows.some(point =>
+        Object.prototype.hasOwnProperty.call(point || {}, def.key)
+      )
+      return has(server.ping) || has(server.loss)
+    }).map(server => String(server.id))
+    return { id: def.id, name: String(def.name), clients, key: def.key } as any
+  })
   return taskCache
 }
 function snapshotPingRecords(uuid: string): any {
   const server = rawServer(uuid)
   if (!server) return { tasks: [], records: [] }
-  const tasks = getTasks()
   if (sysConfig.show_three_net_details !== true) return { tasks: [], records: [] }
   const keys = ['ct', 'cu', 'cm', 'bd']
+  const tasks = getTasks().map((task: any) => {
+    const values = (Array.isArray(server.loss) ? server.loss : [])
+      .map((point: any) => numberOrNull(point?.[task.key]))
+      .filter((value: number | null): value is number => value !== null && value >= 0 && value <= 100)
+    return {
+      ...task,
+      loss: values.length ? values.reduce((sum: number, value: number) => sum + value, 0) / values.length : null
+    }
+  })
   const values = new Map<number, { time: string; values: Record<string, any>; losses: Record<string, any> }>()
   const add = (rows: any[], to: 'values' | 'losses') => {
     ;(Array.isArray(rows) ? rows : []).forEach(point => {
@@ -419,7 +434,8 @@ function snapshotPingRecords(uuid: string): any {
       records.push({
         task_id: taskId[key],
         time: point.time,
-        value: latency === null ? -1 : (lossValue !== null && lossValue >= 1 && latency >= 0 ? -1 : latency)
+        value: latency === null ? -1 : (lossValue !== null && lossValue >= 100 && latency >= 0 ? -1 : latency),
+        loss: lossValue !== null ? lossValue : (latency !== null && latency < 0 ? 100 : 0)
       })
     })
   }
