@@ -1,4 +1,4 @@
-name: Build and publish Pages branch
+name: Build and publish CFSM theme
 
 on:
   push:
@@ -11,7 +11,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: nanomuse-pages-dist
+  group: nanomuse-theme-dist
   cancel-in-progress: false
 
 jobs:
@@ -31,13 +31,10 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      # This repository is loaded by the CFSM Worker theme proxy.
+      # No API_BASE / Worker URL / Pages Secrets are needed: the browser
+      # calls the same-origin Worker, which injects site appearance settings.
       - name: Build static theme
-        env:
-          API_BASE: ${{ secrets.API_BASE }}
-          TITLE: ${{ secrets.TITLE }}
-          BACKGROUND_IMAGE: ${{ secrets.BACKGROUND_IMAGE }}
-          CSP_API: ${{ secrets.CSP_API }}
-          CSP_STATIC: ${{ secrets.CSP_STATIC }}
         run: npm run build:github-page
 
       - name: Append build to dist branch
@@ -57,13 +54,13 @@ jobs:
 
           SOURCE_SUBJECT="$(git log -1 --format=%s "$SOURCE_SHA")"
           git fetch origin dist
-          git worktree add /tmp/nanomuse-pages -B dist origin/dist
-          find /tmp/nanomuse-pages -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a dist/. /tmp/nanomuse-pages/
-          cd /tmp/nanomuse-pages
+          git worktree add /tmp/nanomuse-theme-dist -B dist origin/dist
+          find /tmp/nanomuse-theme-dist -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a dist/. /tmp/nanomuse-theme-dist/
+          cd /tmp/nanomuse-theme-dist
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          # Keep one history entry for every build, even if the output is byte-for-byte identical.
+          # Preserve one dist history commit for every build, even when assets did not change.
           git commit --allow-empty -m "$SOURCE_SUBJECT"
           git push origin HEAD:refs/heads/dist
