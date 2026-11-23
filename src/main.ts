@@ -8,7 +8,7 @@ import { bindNodeList } from './nodes/list'
 import { loadNodeTelemetry } from './nodes/telemetry'
 import { loadMe, loadNodes, loadPublic } from './api/client'
 import { connect } from './api/live'
-import { loadFleet, orbitInit } from './hero/halo'
+import { orbitInit } from './hero/halo'
 import { applySettings } from './hero/settings'
 import { rSummary } from './hero/summary'
 import { bindEcho, loadEcho } from './nodes/echo'
@@ -46,8 +46,10 @@ import { bindPreferences, setMode } from './ui/preferences'
   route()
   rSummary()
   connect()
-  loadFleet()
-  setInterval(loadFleet, 300000)
+  // CFSM exposes node-scoped history only. Do not fan out history reads across the fleet.
+  S.fleetCpu = null
+  S.fleetAvg = null
+  S._historyDone = true
   setInterval(() => {
     if (S.page === 'dashboard' && document.visibilityState === 'visible') {
       void loadEcho()
